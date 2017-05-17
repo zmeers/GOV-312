@@ -1,0 +1,407 @@
+---
+title: "GOV 312 graphs"
+author: "Zoe Meers"
+date: "November 2016"
+output: html_document
+---
+
+
+```{r, message=FALSE, print=FALSE, warning=FALSE, echo=FALSE}
+#load libraries
+require(mosaic)
+require(dplyr)
+require(stringr)
+require(tidyr)
+require(readr)
+require(leaps)
+```
+
+
+```{r, warning=FALSE, message=FALSE, print=FALSE, echo=FALSE}
+#load data set
+cses4 <- read_csv("~/Documents/cses4.csv") 
+```
+
+```{r, results="hide"}
+#subset necessary columns
+allcountries=subset(cses4, select=c(D3025_1_A, D3025_2_A, D3025_3_A, D3025_4_A,D1006_NAM))
+#rename variables
+allcountries=allcountries%>%
+  rename("FM" = D3025_1_A,"UR"=D3025_2_A,"SP"=D3025_3_A, "UN"=D3025_4_A, "Country"=D1006_NAM)
+#calculate aggregated PK scale
+allcountries$Political_Knowledge <- apply(allcountries[1:4], 1, function(x) length(which(x==1)))
+write.csv(allcountries, "allcountries.csv")
+```
+
+
+```{r, results="hide"}
+#data cleaning
+aus314data=subset(cses4[1:3953,], select = c(D3025_1_A, D3025_2_A, D3025_3_A, D3025_4_A, D2001_Y, D2003, D1006_NAM, D1004, D3014, D3005_LH))
+aus314data=aus314data%>% 
+  rename("FM" = D3025_1_A,"UR"=D3025_2_A,"SP"=D3025_3_A, "UN"=D3025_4_A,  "Political_Spectrum" = D3014, "BirthYear" = D2001_Y,  "Education" = D2003, "Compulsory_Voting"= D1006_NAM,  "Survey_Year"= D1004, "Vote" = D3005_LH)
+us314data=subset(cses4[49735:51663,], select = c(D3025_1_A, D3025_2_A, D3025_3_A, D3025_4_A, D2001_Y, D2003, D1006_NAM, D1004, D3014, D3005_LH))
+us314data=us314data%>% 
+  rename("FM" = D3025_1_A,"UR"=D3025_2_A,"SP"=D3025_3_A, "UN"=D3025_4_A,  "Political_Spectrum" = D3014, "BirthYear" = D2001_Y,  "Education" = D2003, "Compulsory_Voting"= D1006_NAM,  "Survey_Year"=D1004, "Vote"=D3005_LH)
+gov314data <- rbind(aus314data, us314data)
+```
+
+```{r, results="hide"}
+gov314data= gov314data %>%
+  mutate(Survey_Year=as.integer(str_sub(Survey_Year,-4,-1)))
+aus314data= aus314data %>%
+  mutate(Survey_Year=as.integer(str_sub(Survey_Year,-4,-1)))
+us314data= us314data %>%
+  mutate(Survey_Year=as.integer(str_sub(Survey_Year,-4,-1)))
+
+gov314data$Political_Knowledge <- apply(gov314data[1:4], 1, function(x) length(which(x==1)))
+aus314data$Political_Knowledge <- apply(aus314data[1:4], 1, function(x) length(which(x==1)))
+us314data$Political_Knowledge <- apply(us314data[1:4], 1, function(x) length(which(x==1))) 
+```
+
+
+```{r, results="hide"}
+gov314data = filter(gov314data, 
+                          Political_Spectrum <= 10, 
+                          BirthYear>=1800, 
+                          BirthYear <=2016, 
+                          Education  <10, 
+                          Vote <=5
+                          )
+us314data=filter(us314data,
+                          Political_Spectrum <= 10, 
+                          BirthYear>=1800, 
+                          BirthYear <=2016, 
+                          Education <10,
+                          Vote <=5
+                          )
+aus314data=filter(aus314data, 
+                          Political_Spectrum <= 10, 
+                          BirthYear>=1800, 
+                          BirthYear <=2016, 
+                          Education <10,
+                          Vote <=5
+                          )
+gov314data = gov314data %>% 
+  mutate(Age2= Survey_Year - BirthYear)
+us314data = us314data  %>%
+  mutate(Age2=Survey_Year - BirthYear)
+aus314data = aus314data %>%
+  mutate(Age2=Survey_Year - BirthYear)
+gov314data = gov314data %>% 
+  mutate(Age= Survey_Year - BirthYear)
+us314data = us314data  %>%
+  mutate(Age=Survey_Year - BirthYear)
+aus314data = aus314data %>%
+  mutate(Age=Survey_Year - BirthYear)
+
+```
+
+
+```{r, results="hide"}
+#Age Groups
+gov314data <- with(gov314data,
+                           mutate(gov314data, 
+                                  Age=case_when(
+                                    Age >=18 & Age < 35 ~ "18-34",
+                                    Age >=35 & Age <60 ~ "35-59",
+                                    Age >=60 ~ "60+"
+                                    )))
+
+gov314data=gov314data%>%
+  mutate(Age=as.factor(Age))
+class(gov314data$Age)
+
+us314data <- with(us314data,
+                           mutate(us314data, 
+                                  Age=case_when(
+                                    Age >=18 & Age < 35 ~ "18-34",
+                                    Age >=35 & Age <60 ~ "35-59",
+                                    Age >=60 ~ "60+"
+                                    )))
+
+us314data=us314data%>%
+  mutate(Age=as.factor(Age))
+class(us314data$Age)
+
+aus314data <- with(aus314data,
+                           mutate(aus314data, 
+                                  Age=case_when(
+                                    Age >=18 & Age < 35 ~ "18-34",
+                                    Age >=35 & Age <60 ~ "35-59",
+                                    Age >=60 ~ "60+"
+                                    )))
+
+aus314data=aus314data%>%
+  mutate(Age=as.factor(Age))
+class(aus314data$Age)
+
+
+
+
+```
+
+
+```{r, results="hide"}
+
+#Political Spectrum Groups
+gov314data <- with(gov314data,
+                           mutate(gov314data, 
+                                  Political_Spectrum=case_when(
+                                    Political_Spectrum >=0 & Political_Spectrum <= 3 ~ "Left-wing",
+                                    Political_Spectrum >=4 & Political_Spectrum <8 ~ "Center",
+                                    Political_Spectrum >= 8 ~ "Right-wing"
+                                    )))
+
+gov314data=gov314data%>%
+  mutate(Political_Spectrum=as.factor(Political_Spectrum))
+class(gov314data$Political_Spectrum)
+
+aus314data <- with(aus314data,
+                           mutate(aus314data, 
+                                  Political_Spectrum=case_when(
+                                    Political_Spectrum >=0 & Political_Spectrum <= 3 ~ "Left-wing",
+                                    Political_Spectrum >=4 & Political_Spectrum <8 ~ "Center",
+                                    Political_Spectrum >= 8 ~ "Right-wing"
+                                    )))
+
+aus314data=aus314data%>%
+  mutate(Political_Spectrum=as.factor(Political_Spectrum))
+class(aus314data$Political_Spectrum)
+
+
+us314data <- with(us314data,
+                           mutate(us314data, 
+                                  Political_Spectrum=case_when(
+                                    Political_Spectrum >=0 & Political_Spectrum <= 3 ~ "Left-wing",
+                                    Political_Spectrum >=4 & Political_Spectrum <8 ~ "Center",
+                                    Political_Spectrum >= 8 ~ "Right-wing"
+                                    )))
+
+us314data=us314data%>%
+  mutate(Political_Spectrum=as.factor(Political_Spectrum))
+class(us314data$Political_Spectrum)
+```
+
+
+
+
+```{r, results="hide"}
+#Education Groups
+gov314data <- with(gov314data,
+                           mutate(gov314data, 
+                                  Education=case_when(
+                                    Education >=1 & Education <= 4 ~ "High School Diploma",
+                                    Education >=5 & Education <=7 ~ "Undergraduate Degree",
+                                    Education >= 8 ~ "Graduate Degree"
+                                    )))
+
+gov314data=gov314data%>%
+  mutate(Education=as.factor(Education))
+class(gov314data$Education)
+
+aus314data <- with(aus314data,
+                           mutate(aus314data, 
+                                 Education=case_when(
+                                    Education >=1 & Education <= 4 ~ "High School Diploma",
+                                    Education >=5 & Education <=7 ~ "Undergraduate Degree",
+                                    Education >= 8 ~ "Graduate Degree"
+                                    )))
+
+aus314data=aus314data%>%
+  mutate(Education=as.factor(Education))
+class(aus314data$Education)
+
+
+us314data <- with(us314data,
+                           mutate(us314data, 
+                                  Education=case_when(
+                                    Education >=1 & Education <= 4 ~ "High School Diploma",
+                                    Education >=5 & Education <=7 ~ "Undergraduate Degree",
+                                    Education >= 8 ~ "Graduate Degree"
+                                    )))
+
+us314data=us314data%>%
+  mutate(Education=as.factor(Education))
+class(us314data$Education)
+
+
+#change from factor to numeric 
+#education
+gov314data$Education_Num <- as.numeric(factor(gov314data$Education , levels=c("High School Diploma" ,
+          "Undergraduate Degree", "Graduate Degree")))
+aus314data$Education_Num <- as.numeric(factor(aus314data$Education , levels=c("High School Diploma" ,
+          "Undergraduate Degree", "Graduate Degree")))
+us314data$Education_Num <- as.numeric(factor(us314data$Education , levels=c("High School Diploma" ,
+          "Undergraduate Degree", "Graduate Degree")))
+```
+
+```{r, results="hide"}
+gov314data$Age_Num <- as.numeric(factor(gov314data$Age, levels=c("18-34" ,
+          "35-59", "60+")))
+aus314data$Age_Num <- as.numeric(factor(aus314data$Age, levels=c("18-34" ,
+          "35-59", "60+")))
+us314data$Age_Num <- as.numeric(factor(us314data$Age, levels=c("18-34" ,
+          "35-59", "60+")))
+```
+```{r, results="hide"}
+#political spectrum
+gov314data$Political_Spectrum_Numeric <- as.numeric(factor(gov314data$Political_Spectrum, levels=c("Left-wing","Center","Right-wing")))
+aus314data$Political_Spectrum_Numeric <- as.numeric(factor(aus314data$Political_Spectrum, levels=c("Left-wing","Center","Right-wing")))
+us314data$Political_Spectrum_Numeric <- as.numeric(factor(us314data$Political_Spectrum, levels=c("Left-wing","Center","Right-wing")))
+
+#political knowledge 
+
+gov314data$Political_Knowledge <- as.numeric(factor(gov314data$Political_Knowledge , levels=c("1","2","3","4")))
+aus314data$Political_Knowledge <- as.numeric(factor(aus314data$Political_Knowledge , levels=c("1","2","3","4")))
+us314data$Political_Knowledge <- as.numeric(factor(us314data$Political_Knowledge , levels=c("1","2","3","4")))
+
+gov314data <- gov314data %>%
+      mutate(Political_Knowledge = ifelse(is.na(Political_Knowledge),0,Political_Knowledge))
+aus314data <- aus314data %>%
+      mutate(Political_Knowledge = ifelse(is.na(Political_Knowledge),0,Political_Knowledge))
+us314data <- us314data %>%
+      mutate(Political_Knowledge = ifelse(is.na(Political_Knowledge),0,Political_Knowledge))
+```
+
+
+```{r, results="hide"}
+#Delete useless columns
+aus314data=subset(aus314data, select = -c(FM, UR, SP, UN, BirthYear, Survey_Year))
+us314data=subset(us314data, select = -c(FM, UR, SP, UN, BirthYear, Survey_Year))
+gov314data=subset(gov314data, select = -c(FM, UR, SP, UN, BirthYear, Survey_Year))
+```
+
+
+```{r, results="hide"}
+# Convert no vote (5) to 0 and change compulsory voting to 1 and 0
+gov314data$Vote[gov314data$Vote == "5"] <- 0
+aus314data$Vote[aus314data$Vote == "5"] <- 0
+us314data$Vote[us314data$Vote == "5"] <- 0
+```
+
+```{r, results="hide"}
+gov314data$Compulsory_Voting[gov314data$Compulsory_Voting == "United States of America"] <- 0
+aus314data$Compulsory_Voting[aus314data$Compulsory_Voting == "United States of America"] <- 0
+us314data$Compulsory_Voting[us314data$Compulsory_Voting == "United States of America"] <- 0
+gov314data$Compulsory_Voting[gov314data$Compulsory_Voting == "Australia"] <- 1
+aus314data$Compulsory_Voting[aus314data$Compulsory_Voting == "Australia"] <- 1
+us314data$Compulsory_Voting[us314data$Compulsory_Voting == "Australia"] <- 1
+```
+
+###Graphs
+
+```{r}
+#Bar Graph - Voters in Australia
+
+
+voters.au <-prop.table(table(aus314data$'Political_Knowledge', aus314data$'Vote'),2)
+
+barplot(voters.au, main="Political Knowledge - Australians Whether They\n Voted or Not", names.arg=c( "Did Not Vote", "Voted"), xlab="Voting Choice", ylab="Percentage of Responses by Group", border=FALSE,   ylim=c(0.00,0.70), beside=TRUE, col=c("light blue","lightskyblue","dodgerblue2","blue1","darkblue"))
+grid(NA, NULL, lwd=1, lty=1, col="#ffffff")
+legend("topleft", title = c("Political Knowledge Scale"),
+       legend = c("0","1","2","3","4"), 
+       fill = c("lightblue","lightskyblue","dodgerblue2","blue1","darkblue"), bty="n", border=FALSE, horiz=TRUE)
+abline(0, 0)
+```
+
+
+```{r}
+#Bar Graph - Voters in the US
+
+
+voters.us <-prop.table(table(us314data$'Political_Knowledge', us314data$'Vote'),2)
+
+barplot(voters.us, main="Political Knowledge - Americans Whether They\n Voted or Not", names.arg=c("Did Not Vote", "Voted"), xlab="Voting Choice", ylab="Percentage of Responses by Group", border=FALSE,   ylim=c(0.00,0.70), beside=TRUE, col=c("indianred1","firebrick1","red3","darkred","orangered4"))
+grid(NA, NULL, lwd=1, lty=1, col="#ffffff")
+
+legend("topright", title = c("Political Knowledge Scale"),
+       legend = c("0","1","2","3","4"), 
+       fill = c("indianred1","firebrick1","red3","darkred","orangered4"), bty="n", border=FALSE, horiz=TRUE)
+abline(0, 0)
+```
+
+```{r}
+
+#Bar Graph - PK Education in the US
+
+us.edu <-prop.table(table(us314data$'Political_Knowledge', us314data$'Education'),2)
+barplot(us.edu, main="Political Knowledge - Americans Differentiated\n by Education Level", xlab="Level of Education Received", ylab="Percentage of Responses by Group", border=FALSE, ylim=c(0.00,0.6), beside=TRUE, col=c("indianred1","firebrick1","red3","darkred","orangered4"))
+grid(NA, NULL, lwd=1, lty=1, col="#ffffff")
+
+legend("topright", title = c("Political Knowledge Scale"),
+       legend = c("0","1","2","3","4"), 
+       fill = c("indianred1","firebrick1","red3","darkred","orangered4"), bty="n", border=FALSE, horiz=TRUE)
+abline(0, 0)
+```
+
+
+```{r}
+
+#Bar Graph - PK Education in Aus
+
+aus.edu <-prop.table(table(aus314data$'Political_Knowledge', aus314data$'Education'),2)
+barplot(aus.edu, main="Political Knowledge - Australians Differentiated\n by Education Level", xlab="Level of Education Received", ylab="Percentage of Responses by Group", border=FALSE, ylim=c(0.00,0.6), beside=TRUE,col=c("light blue","lightskyblue","dodgerblue2","blue1","darkblue"))
+grid(NA, NULL, lwd=1, lty=1, col="#ffffff")
+legend("topleft", title = c("Political Knowledge Scale"),
+       legend = c("0","1","2","3","4"), 
+       fill = c("lightblue","lightskyblue","dodgerblue2","blue1","darkblue"), bty="n", border=FALSE, horiz=TRUE)
+abline(0, 0)
+```
+
+```{r}
+
+#Bar Graph - PK Age in the US
+
+age.us<-prop.table(table(us314data$'Political_Knowledge', us314data$Age),2)
+barplot(age.us, main="Political Knowledge - Americans Differentiated\n by Age",  xlab="Age Group", ylab="Percentage of Responses by Group", border=FALSE,  ylim=c(0.00,0.6), beside=TRUE, col=c("indianred1","firebrick1","red3","darkred","orangered4"))
+grid(NA, NULL, lwd=1, lty=1, col="#ffffff")
+
+legend("topright", title = c("Political Knowledge Scale"),
+       legend = c("0","1","2","3","4"), 
+       fill = c("indianred1","firebrick1","red3","darkred","orangered4"), bty="n", border=FALSE, horiz=TRUE)
+abline(0, 0)
+```
+
+```{r}
+
+#Bar Graph - PK Age in Australia
+
+age.aus <-prop.table(table(aus314data$'Political_Knowledge', aus314data$Age),2)
+barplot(age.aus, main="Political Knowledge - Australians Differentiated\n by Age",  xlab="Age Group", ylab="Percentage of Responses by Group", border=FALSE, ylim=c(0.00,0.6), beside=TRUE, col=c("light blue","lightskyblue","dodgerblue2","blue1","darkblue"))
+grid(NA, NULL, lwd=1, lty=1, col="#ffffff")
+
+legend("topright", title = c("Political Knowledge Scale"),
+       legend = c("0","1","2","3","4"), 
+       fill = c("light blue","lightskyblue","dodgerblue2","blue1","darkblue"), bty="n", border=FALSE, horiz=TRUE)
+abline(0, 0)
+```
+
+
+```{r}
+
+#Bar Graph - PK Partisanship in Australia
+
+political.spectrum.aus <-prop.table(table(aus314data$'Political_Knowledge', aus314data$'Political_Spectrum'),2)
+barplot(political.spectrum.aus, main="Political Knowledge - Australians Differentiated\n by Left-Right Political Ideology",  xlab="Left-Right Political Ideology", ylab="Percentage of Responses by Group", border=FALSE, ylim=c(0.00,0.6), beside=TRUE, col=c("light blue","lightskyblue","dodgerblue2","blue1","darkblue"))
+grid(NA, NULL, lwd=1, lty=1, col="#ffffff")
+
+legend("topright", title = c("Political Knowledge Scale"),
+       legend = c("0","1","2","3","4"), 
+       fill = c("light blue","lightskyblue","dodgerblue2","blue1","darkblue"), bty="n", border=FALSE, horiz=TRUE)
+abline(0, 0)
+```
+
+```{r}
+
+#Bar Graph - PK Partisanship in the US
+
+political.spectrum.us <-prop.table(table(us314data$'Political_Knowledge', us314data$'Political_Spectrum'),2)
+barplot(political.spectrum.us, main="Political Knowledge - Americans Differentiated\n by Left-Right Political Ideology",  xlab="Left-Right Political Ideology", ylab="Percentage of Responses by Group", border=FALSE, ylim=c(0.00,0.6), beside=TRUE, col=c("indianred1","firebrick1","red3","darkred","orangered4"))
+grid(NA, NULL, lwd=1, lty=1, col="#ffffff")
+
+legend("topright", title = c("Political Knowledge Scale"),
+       legend = c("0","1","2","3","4"), 
+       fill = c("indianred1","firebrick1","red3","darkred","orangered4"), bty="n", border=FALSE, horiz=TRUE)
+abline(0, 0)
+```
+
