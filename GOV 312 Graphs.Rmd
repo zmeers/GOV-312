@@ -2,7 +2,9 @@
 title: "GOV 312 graphs"
 author: "Zoe Meers"
 date: "November 2016"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 
@@ -289,7 +291,7 @@ us314data$Compulsory_Voting[us314data$Compulsory_Voting == "Australia"] <- 1
 
 ###Graphs
 
-```{r, echo=FALSE, fig.height=4, fig.width=10}
+```{r, echo=FALSE, fig.height=5, fig.width=10}
 #Bar Graph - Voters in Australia
 
 
@@ -321,10 +323,10 @@ abline(0, 0)
 
 
 ```{r, echo=FALSE, fig.height=5, fig.width=15}
-aus314data$Education <- factor(aus314data$Education)
-levels(aus314data$Education) <- c("High School Diploma","Undergraduate Degree","Graduate Degree")
-us314data$Education <- factor(us314data$Education)
-levels(us314data$Education) <- c("High School Diploma","Undergraduate Degree","Graduate Degree")
+aus314data$Education <- factor(aus314data$Education, levels=c("High School Diploma","Undergraduate Degree","Graduate Degree"))
+
+us314data$Education <- factor(us314data$Education, levels=c("High School Diploma","Undergraduate Degree","Graduate Degree"))
+
 
 us.edu <-prop.table(table(us314data$'Political_Knowledge', us314data$'Education'),2)
 aus.edu <-prop.table(table(aus314data$'Political_Knowledge', aus314data$'Education'),2)
@@ -347,7 +349,7 @@ legend("topleft", title = c("Political Knowledge Scale"),
 abline(0, 0)
 ```
 
-```{r, fig.width=10, fig.height=4, echo=FALSE}
+```{r, fig.width=10, fig.height=5, echo=FALSE}
 
 age.us<-prop.table(table(us314data$'Political_Knowledge', us314data$Age),2)
 age.aus <-prop.table(table(aus314data$'Political_Knowledge', aus314data$Age),2)
@@ -373,22 +375,17 @@ abline(0, 0)
 ```
 
 
-```{r, fig.width=10, fig.height=4, echo=FALSE}
+```{r, fig.width=10, fig.height=5, echo=FALSE}
 
-aus314data$Political_Spectrum <- factor(aus314data$Political_Spectrum)
-levels(aus314data$Political_Spectrum) <- c("Left-wing","Center","Right-wing")
-
-us314data$Political_Spectrum <- factor(us314data$Political_Spectrum)
-levels(us314data$Political_Spectrum) <- c("Left-wing","Center","Right-wing")
+aus314data$Political_Spectrum <- factor(aus314data$Political_Spectrum, levels=c("Left-wing","Center","Right-wing"))
 
 
-political.spectrum.aus <-prop.table(table(aus314data$'Political_Knowledge', aus314data$'Political_Spectrum'),2)
-
-political.spectrum.us <-prop.table(table(us314data$'Political_Knowledge', us314data$'Political_Spectrum'),2)
-
-
-
+us314data$Political_Spectrum <- factor(us314data$Political_Spectrum, levels=c("Left-wing","Center","Right-wing"))
 par(mfrow = c(1:2))
+
+
+political.spectrum.us<-prop.table(table(us314data$'Political_Knowledge', us314data$Political_Spectrum),2)
+political.spectrum.aus <-prop.table(table(aus314data$'Political_Knowledge', aus314data$Political_Spectrum),2)
 
 
 barplot(political.spectrum.aus, main="Political Knowledge of Partisan Australians", ylab="Percentage of Responses by Group", border=FALSE, ylim=c(0.00,0.6), beside=TRUE, col=c("light blue","lightskyblue","dodgerblue2","blue1","darkblue"))
